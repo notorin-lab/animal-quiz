@@ -33,6 +33,6 @@ Google Fonts (Kiwi Maru)
 
 🚀 公開URL
 
-(ここに GitHub Pages で発行されたあなたのURLを貼り付けてください！)
+[(ここに GitHub Pages で発行されたあなたのURLを貼り付けてください！)](https://notorin-lab.github.io/animal-quiz/)
 
-Created with ❤️ by [あなたの名前]
+Created with ❤️ by [notorin]
