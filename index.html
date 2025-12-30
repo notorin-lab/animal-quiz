@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>どうぶつ なまえあてクイズ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&display=swap');
+        body {
+            font-family: 'Kiwi Maru', serif;
+            background-color: #f0fdf4;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            touch-action: manipulation;
+        }
+        .bounce-in { animation: bounceIn 0.5s ease; }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .shake { animation: shake 0.5s ease; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        input { font-size: 16px !important; }
+    </style>
+</head>
+<body class="flex items-center justify-center p-2 sm:p-4">
+
+    <div id="game-container" class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-green-200 flex flex-col max-h-[95vh]">
+        <div class="bg-green-500 p-4 text-white text-center flex-shrink-0">
+            <h1 class="text-xl sm:text-2xl font-bold">どうぶつクイズ</h1>
+            <div id="game-stats" class="flex justify-between mt-2 px-2 text-xs sm:text-sm">
+                <span>スコア: <span id="score" class="font-bold text-yellow-200">0</span></span>
+                <span>ライフ: <span id="life-icons">❤️❤️❤️</span></span>
+                <span>もんめ: <span id="question-number">1</span> / 10</span>
+            </div>
+        </div>
+
+        <div class="p-4 sm:p-8 text-center flex-grow overflow-y-auto">
+            <div id="quiz-screen">
+                <div class="mb-4">
+                    <span id="animal-emoji" class="text-6xl sm:text-8xl block mb-2 bounce-in">❓</span>
+                    <p class="text-gray-500 text-xs mb-1">ヒント：</p>
+                    <p id="hint-text" class="text-base sm:text-xl font-bold text-gray-800 bg-green-50 p-3 sm:p-4 rounded-xl border-2 border-dashed border-green-200 flex items-center justify-center min-h-[4rem]"></p>
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="answer-input" inputmode="hiragana" placeholder="なまえを ひらがなで" class="w-full px-4 py-3 text-center text-lg border-2 border-green-300 rounded-full focus:outline-none focus:border-green-500 transition-colors bg-white shadow-inner">
+                    <button id="submit-btn" class="w-full bg-orange-400 hover:bg-orange-500 active:scale-95 text-white font-bold py-3 sm:py-4 rounded-full shadow-lg transition-all text-lg sm:text-xl">こたえる！</button>
+                </div>
+                <div id="message-area" class="mt-4 h-6 font-bold text-base"></div>
+            </div>
+
+            <div id="result-screen" class="hidden py-4">
+                <h2 class="text-2xl font-bold text-green-600 mb-2">おわり！</h2>
+                <div id="final-comment" class="text-lg mb-4 font-bold text-orange-500 px-2"></div>
+                <div class="bg-gray-50 rounded-2xl p-4 mb-6">
+                    <p class="text-gray-600 text-sm mb-1">スコア</p>
+                    <p class="text-3xl font-bold text-gray-800"><span id="final-score">0</span> <span class="text-lg">/ 100</span></p>
+                </div>
+                <button onclick="location.reload()" class="w-full bg-green-500 hover:bg-green-600 active:scale-95 text-white font-bold py-3 rounded-full shadow-lg transition-all text-xl">もういちど</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { emoji: "🐘", hint: "はなが とっても ながいよ", answer: "ぞう" },
+            { emoji: "🦒", hint: "くびが とっても ながいよ", answer: "きりん" },
+            { emoji: "🦁", hint: "「がおー」となぜく、どうぶつの おうさま", answer: "らいおん" },
+            { emoji: "🐇", hint: "おみみが ながくて ぴょんぴょん はねるよ", answer: "うさぎ" },
+            { emoji: "🐼", hint: "しろと くろの もよう。ささが だいすき", answer: "ぱんだ" },
+            { emoji: "🐒", hint: "バナナが だいすき。きあがりが とくい", answer: "さる" },
+            { emoji: "🦓", hint: "しろと くろの しましま もよう", answer: "しまうま" },
+            { emoji: "🐨", hint: "ユーカリのはを たべて、木の上で ねるよ", answer: "こあら" },
+            { emoji: "🦛", hint: "おーきな おくちを あけるよ。みずのなかが すき", answer: "かば" },
+            { emoji: "🐧", hint: "とりだけど およぐのが とくい。こおりの上が すき", answer: "ぺんぎん" },
+            { emoji: "🐯", hint: "きいろと くろの しまもよう。とても つよいぞ", answer: "とら" },
+            { emoji: "🐻", hint: "からだが おおきくて、はちみつが だいすき", answer: "くま" },
+            { emoji: "🦊", hint: "おみみが ピンとしていて、しっぽが ふわふわ", answer: "きつね" },
+            { emoji: "🐱", hint: "「にゃー」となき、ねずみを おっかけるよ", answer: "ねこ" },
+            { emoji: "🐶", hint: "「わんわん」となき、おさんぽが だいすき", answer: "いぬ" },
+            { emoji: "🐍", hint: "あしが なくて、にょろにょろ うごくよ", answer: "へび" },
+            { emoji: "🐢", hint: "あるくのが おそい。せなかに かたい こうらがあるよ", answer: "かめ" },
+            { emoji: "🐸", hint: "「げろげろ」なき、みずたまもようが にあうよ", answer: "かえる" },
+            { emoji: "🐷", hint: "おはなが まるくて、しっぽが くるんとしているよ", answer: "ぶた" },
+            { emoji: "🐎", hint: "とっても はやく はしるよ。「ひひーん」", answer: "うま" },
+            { emoji: "🐑", hint: "からだが しろくて モコモコしているよ", answer: "ひつじ" },
+            { emoji: "🐊", hint: "おーきな おくちに、ギザギザの はがあるよ", answer: "わに" },
+            { emoji: "🐭", hint: "ちいさな からだで「ちゅーちゅー」なくよ", answer: "ねずみ" },
+            { emoji: "🦌", hint: "あたまに りっぱな つのが はえているよ", answer: "しか" },
+            { emoji: "🦘", hint: "おなかの ふくろに あかちゃんを いれるよ", answer: "かんがるー" },
+            { emoji: "🐿️", hint: "ほっぺに たべものを ためこむよ", answer: "りす" },
+            { emoji: "🦉", hint: "よるに めが パッチリ。あたまが くるっと まわるよ", answer: "ふくろう" },
+            { emoji: "🐳", hint: "うみに すむ、せかいで いちばん おおきな どうぶつ", answer: "くじら" },
+            { emoji: "🐆", hint: "からだに てんてん もよう。はしるのが せかい一 はやい！", answer: "ちーたー" },
+            { emoji: "🐿️", hint: "ほっぺが ぷっくり。よるに そらをおよぐ（飛ぶ）よ", answer: "ももんが" },
+            { emoji: "🐜", hint: "した（舌）が とっても ながい。ちいさい むしを たべるよ", answer: "ありくい" },
+            { emoji: "🦈", hint: "うみの はんたー。しろと くろの もようで おおきいよ", answer: "しゃち" },
+            { emoji: "🦥", hint: "ずーっと 木に ぶらさがって、ほとんど うごかないよ", answer: "なまけもの" }
+        ];
+
+        let shuffledData = [];
+        let currentIdx = 0;
+        let score = 0;
+        let lives = 3;
+        const maxQuestions = 10;
+
+        const emojiEl = document.getElementById('animal-emoji');
+        const hintEl = document.getElementById('hint-text');
+        const inputEl = document.getElementById('answer-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreEl = document.getElementById('score');
+        const lifeEl = document.getElementById('life-icons');
+        const qNumEl = document.getElementById('question-number');
+        const messageEl = document.getElementById('message-area');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+
+        function init() {
+            shuffledData = [...quizData].sort(() => Math.random() - 0.5).slice(0, maxQuestions);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const item = shuffledData[currentIdx];
+            emojiEl.textContent = "❓";
+            emojiEl.className = "text-6xl sm:text-8xl block mb-2 bounce-in";
+            hintEl.textContent = item.hint;
+            inputEl.value = "";
+            inputEl.focus();
+            qNumEl.textContent = currentIdx + 1;
+        }
+
+        function checkAnswer() {
+            const userVal = inputEl.value.trim();
+            const correctVal = shuffledData[currentIdx].answer;
+
+            if (!userVal) return;
+
+            if (userVal === correctVal) {
+                score += 10;
+                scoreEl.textContent = score;
+                emojiEl.textContent = shuffledData[currentIdx].emoji;
+                messageEl.textContent = "せいかい！ ✨";
+                messageEl.className = "mt-4 h-6 font-bold text-base text-green-500";
+                
+                setTimeout(() => {
+                    currentIdx++;
+                    if (currentIdx < maxQuestions) {
+                        messageEl.textContent = "";
+                        loadQuestion();
+                    } else {
+                        showResult();
+                    }
+                }, 1200);
+            } else {
+                lives--;
+                updateLives();
+                emojiEl.classList.remove('bounce-in', 'shake');
+                void emojiEl.offsetWidth;
+                emojiEl.classList.add('shake');
+                
+                if (lives <= 0) {
+                    messageEl.textContent = "ゲームオーバー... 😭";
+                    messageEl.className = "mt-4 h-6 font-bold text-base text-red-600";
+                    setTimeout(showResult, 1200);
+                } else {
+                    messageEl.textContent = "ちがうよ！ あと " + lives + "回";
+                    messageEl.className = "mt-4 h-6 font-bold text-base text-red-500";
+                }
+            }
+        }
+
+        function updateLives() {
+            lifeEl.textContent = "❤️".repeat(lives) + "🖤".repeat(3 - lives);
+        }
+
+        function showResult() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            
+            const comment = score === 100 ? "かんぺき！ どうぶつはかせだね！" :
+                          score >= 70 ? "すごい！ あとちょっと！" : "がんばったね！";
+            document.getElementById('final-comment').textContent = comment;
+        }
+
+        submitBtn.addEventListener('click', checkAnswer);
+        inputEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAnswer(); });
+
+        init();
+    </script>
+</body>
+</html>
